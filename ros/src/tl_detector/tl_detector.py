@@ -20,6 +20,8 @@ class TLDetector(object):
 
         self.pose = None
         self.waypoints = None
+        self.waypoints_2d = None
+        self.waypoint_tree = None
         self.camera_image = None
         self.lights = []
 
@@ -49,11 +51,6 @@ class TLDetector(object):
         self.last_state = TrafficLight.UNKNOWN
         self.last_wp = -1
         self.state_count = 0
-
-        self.base_waypoints = None
-        self.waypoints_2d = None
-        self.waypoint_tree = None
-
 
         # by deyb
         self.image_counter = 0
@@ -89,11 +86,11 @@ class TLDetector(object):
             diff = current_time - self.last_time
             # rospy.logwarn("---------time diff: {}".format(diff))
             self.last_time = current_time
-        if self.image_counter == 5:
+        if self.image_counter == 3:
             self.has_image = True
             self.camera_image = msg
             light_wp, state = self.process_traffic_lights()
-            rospy.logwarn("...processing image...")
+            # rospy.logwarn("...processing image...")
 
 
             '''
@@ -150,6 +147,10 @@ class TLDetector(object):
         #
         # #Get classification
         # return self.light_classifier.get_classification(cv_image)
+        cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
+        box, score = self.light_classifier.detect_traffic_light(cv_image)
+        if box is not None and score is not None:
+            rospy.logwarn('Detected traffic light with score {}'.format(score))
         return light.state
 
     def process_traffic_lights(self):
@@ -203,6 +204,7 @@ class TLDetector(object):
         #     return light_wp, state
         # self.waypoints = None
         # return -1, TrafficLight.UNKNOWN
+
 
 if __name__ == '__main__':
     try:
