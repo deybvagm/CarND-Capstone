@@ -11,6 +11,7 @@ from scipy.spatial import KDTree
 import tf
 import cv2
 import yaml
+import numpy as np
 
 STATE_COUNT_THRESHOLD = 3
 
@@ -52,10 +53,7 @@ class TLDetector(object):
         self.last_wp = -1
         self.state_count = 0
 
-        # by deyb
         self.image_counter = 0
-        self.last_time = None
-        # end
 
         rospy.spin()
 
@@ -79,19 +77,10 @@ class TLDetector(object):
             msg (Image): image from car-mounted camera
 
         """
-        current_time = rospy.get_time()
-        if not self.last_time:
-            self.last_time = current_time
-        else:
-            diff = current_time - self.last_time
-            # rospy.logwarn("---------time diff: {}".format(diff))
-            self.last_time = current_time
         if self.image_counter == 3:
             self.has_image = True
             self.camera_image = msg
             light_wp, state = self.process_traffic_lights()
-            # rospy.logwarn("...processing image...")
-
 
             '''
             Publish upcoming red lights at camera frequency.
@@ -125,7 +114,6 @@ class TLDetector(object):
             int: index of the closest waypoint in self.waypoints
 
         """
-        #TODO implement
         closest_idx = self.waypoint_tree.query([x, y], 1)[1]
         return closest_idx
 
@@ -139,19 +127,22 @@ class TLDetector(object):
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
-        # if(not self.has_image):
-        #     self.prev_light_loc = None
-        #     return False
-        #
-        # cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
-        #
-        # #Get classification
-        # return self.light_classifier.get_classification(cv_image)
+        predicted_state = None
+        if(not self.has_image):
+            # self.prev_light_loc = None
+            return TrafficLight.UNKNOWN
+
         cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
         box, score = self.light_classifier.detect_traffic_light(cv_image)
         if box is not None and score is not None:
-            rospy.logwarn('Detected traffic light with score {}'.format(score))
-        return light.state
+            roi = cv_image[box[0]:box[2], box[1]:box[3]]
+            resize = (32, 32)
+            img = cv2.resize(roi, resize, interpolation=cv2.INTER_AREA)
+            img = np.array([img])
+            predicted_state = self.light_classifier.get_classification(img)
+        return predicted_state
+
+
 
     def process_traffic_lights(self):
         """Finds closest visible traffic light, if one exists, and determines its
@@ -189,21 +180,6 @@ class TLDetector(object):
             return line_wp_idx, state
 
         return -1, TrafficLight.UNKNOWN
-
-        # light = None
-        #
-        # # List of positions that correspond to the line to stop in front of for a given intersection
-        # stop_line_positions = self.config['stop_line_positions']
-        # if(self.pose):
-        #     car_position = self.get_closest_waypoint(self.pose.pose)
-        #
-        # #TODO find the closest visible traffic light (if one exists)
-        #
-        # if light:
-        #     state = self.get_light_state(light)
-        #     return light_wp, state
-        # self.waypoints = None
-        # return -1, TrafficLight.UNKNOWN
 
 
 if __name__ == '__main__':

@@ -1,19 +1,26 @@
+import rospy
 from styx_msgs.msg import TrafficLight
 import tensorflow as tf
 import numpy as np
+from keras.models import load_model
+import cv2
 
-OBJECT_DETECTION_MODEL_PATH = '../models/detection/frozen_inference_graph.pb'
+OBJECT_DETECTION_MODEL_PATH = '/capstone/ros/src/tl_detector/models/detection/frozen_inference_graph.pb'
+CLASSIFICATION_MODEL_PATH = '/capstone/ros/src/tl_detector/models/classification/classification_model.h5'
 
 class TLClassifier(object):
     def __init__(self):
         self.detection_graph = None
+        self.classification_graph = None
         self.sess = None
         self.image_tensor = None
         self.boxes = None
         self.scores = None
         self.classes = None
         self.num_detections = None
+        self.classification_model = None
         self.__init_object_detection()
+        self.__init_classification()
 
     def __init_object_detection(self):
         self.detection_graph = tf.Graph()
@@ -33,6 +40,11 @@ class TLClassifier(object):
             self.scores = self.detection_graph.get_tensor_by_name('detection_scores:0')
             self.classes = self.detection_graph.get_tensor_by_name('detection_classes:0')
             self.num_detections = self.detection_graph.get_tensor_by_name('num_detections:0')
+
+    def __init_classification(self):
+        self.classification_model = load_model(CLASSIFICATION_MODEL_PATH)
+        self.classification_graph = tf.get_default_graph()
+        self.classification_model._make_predict_function()
 
     def __box_normal_to_pixel(self, box, dim):
         height, width = dim[0], dim[1]
@@ -62,7 +74,6 @@ class TLClassifier(object):
                 box_h = box[2] - box[0]
                 box_w = box[3] - box[1]
                 ratio = box_h / (box_w + 0.01)
-                # print (tl_idx, scores[tl_idx], ratio, box_w, box_h)
                 if box_w >= 20 and box_h >= 20 and ratio >= 1.5:
                     best_box = box
                     best_score = scores[tl_idx]
@@ -79,5 +90,8 @@ class TLClassifier(object):
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
-        #TODO implement light color prediction
-        return TrafficLight.UNKNOWN
+        x = image / 255.
+        with self.classification_graph.as_default():
+            pred = self.classification_model.predict(x)
+        predicted_class = pred.argmax()
+        return 4 if predicted_class == 3 else predicted_class
