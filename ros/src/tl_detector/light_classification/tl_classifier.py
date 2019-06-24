@@ -5,8 +5,8 @@ import numpy as np
 from keras.models import load_model
 import cv2
 
-OBJECT_DETECTION_MODEL_PATH = '/capstone/ros/src/tl_detector/models/detection/frozen_inference_graph.pb'
-CLASSIFICATION_MODEL_PATH = '/capstone/ros/src/tl_detector/models/classification/classification_model.h5'
+OBJECT_DETECTION_MODEL_PATH = 'models/detection/frozen_inference_graph.pb'
+CLASSIFICATION_MODEL_PATH = 'models/classification/classification_model.h5'
 
 class TLClassifier(object):
     def __init__(self):

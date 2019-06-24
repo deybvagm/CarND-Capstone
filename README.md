@@ -64,13 +64,13 @@ This project is intended to run only on the simulator and was run using docker c
 #### Perception module
 This module is responsible for sensing the environment and communicate if an action should be performed. Specifically for this project, an action should be taken if there is a red traffic light in front of the car. To do this I have used two models, one for detecting the traffic light and one for classifying the traffic light color into red, yellow, green or unknown:
 
-- **Traffic light detection**: For this task, I used the [Tensorflow Object Detection API](https://github.com/tensorflow/models/tree/master/research/object_detection) with a pre-trained model using the COCO dataset. This model is able to recognize many objects, including traffic lights which is is represented with class 10 from the model output. Within the docker container, the model can be accessed with the path `/capstone/ros/src/tl_detector/models/detection/frozen_inference_graph.pb`
+- **Traffic light detection**: For this task, I used the [Tensorflow Object Detection API](https://github.com/tensorflow/models/tree/master/research/object_detection) with a pre-trained model using the COCO dataset. This model is able to recognize many objects, including traffic lights which is is represented with class 10 from the model output. Within the docker container, the model can be accessed with the path `models/detection/frozen_inference_graph.pb` in the `tl_detector` module
 
 - **Traffic light color classification**: For the classification task, a CNN was implemented using Keras. The CNN architecture was the LeNet5 which is presented below:
 
 ![LeNet5 model](imgs/model.png)
 
-Tu run the model inside the docker container, the model should be located in the path `/capstone/ros/src/tl_detector/models/classification/classification_model.h5`
+Tu run the model inside the docker container, the model should be located in the path `models/classification/classification_model.h5` inside the `tl_detector` module
 
 ### Planning module
 This module(`waypoint_updater`) subscribes to the `/traffic_waypoint` message that contains the closest waypoint where there is a red traffic light in order to change the car's speed gradually until it stops at the waypoint
